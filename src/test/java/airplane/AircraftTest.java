@@ -42,4 +42,39 @@ class AircraftTest {
         aircraft.prepareForTakeoff();
         aircraft.takeOff();
     }
+
+    @Test
+    void prepareForTakeoff_whenAllSystemsOk_becomesReadyAndChecksEveryComponent() {
+        stubHealthyComponents();
+
+        aircraft.prepareForTakeoff();
+
+        assertEquals(FlightStatus.READY, aircraft.getStatus());
+        verify(engine, times(1)).isOperational();
+        verify(fuelSystem, times(1)).hasEnoughFuel();
+        verify(navigationSystem, times(1)).isRouteAvailable();
+    }
+
+    @Test
+    void prepareForTakeoff_whenEngineBroken_throwsAndDoesNotCheckFuelOrRoute() {
+        when(engine.isOperational()).thenReturn(false);
+
+        assertThrows(FlightException.class, () -> aircraft.prepareForTakeoff());
+
+        assertEquals(FlightStatus.GROUNDED, aircraft.getStatus());
+        verify(fuelSystem, times(0)).hasEnoughFuel();
+        verify(navigationSystem, times(0)).isRouteAvailable();
+    }
+
+    @Test
+    void prepareForTakeoff_whenFuelCheckThrows_exceptionPropagatesAndStatusUnchanged() {
+        when(engine.isOperational()).thenReturn(true);
+        when(fuelSystem.hasEnoughFuel()).thenThrow(new IllegalStateException("sensor failure"));
+
+        assertThrows(IllegalStateException.class, () -> aircraft.prepareForTakeoff());
+
+        assertEquals(FlightStatus.GROUNDED, aircraft.getStatus());
+        verify(navigationSystem, times(0)).isRouteAvailable();
+    }
+
 }
