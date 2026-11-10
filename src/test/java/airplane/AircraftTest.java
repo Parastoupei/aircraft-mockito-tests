@@ -104,4 +104,20 @@ class AircraftTest {
         verify(landingGear, times(0)).retract();
     }
 
+    @Test
+    void cruise_whenEngineFailsMidFlight_emergencyLandsWithoutConsumingFuel() {
+        when(engine.isOperational()).thenReturn(true, false);
+        when(fuelSystem.hasEnoughFuel()).thenReturn(true);
+        when(navigationSystem.isRouteAvailable()).thenReturn(true);
+        aircraft.prepareForTakeoff();
+        aircraft.takeOff();
+
+        aircraft.cruise(10.0);
+
+        assertEquals(FlightStatus.LANDED, aircraft.getStatus());
+        verify(landingGear, times(1)).deploy();
+        verify(engine, times(1)).stop();
+        verify(fuelSystem, times(0)).consumeFuel(anyDouble());
+    }
+
 }
