@@ -77,4 +77,18 @@ class AircraftTest {
         verify(navigationSystem, times(0)).isRouteAvailable();
     }
 
+    @Test
+    void takeOff_startsEngineAndRetractsGear() {
+        stubHealthyComponents();
+        doNothing().when(engine).start();
+        doNothing().when(landingGear).retract();
+        aircraft.prepareForTakeoff();
+
+        aircraft.takeOff();
+
+        assertEquals(FlightStatus.IN_FLIGHT, aircraft.getStatus());
+        verify(engine, times(1)).start();
+        verify(landingGear, times(1)).retract();
+    }
+
 }
