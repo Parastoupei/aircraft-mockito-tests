@@ -91,4 +91,17 @@ class AircraftTest {
         verify(landingGear, times(1)).retract();
     }
 
+    @Test
+    void takeOff_whenEngineStartFails_abortsAndWrapsCause() {
+        stubHealthyComponents();
+        doThrow(new IllegalStateException("cannot start")).when(engine).start();
+        aircraft.prepareForTakeoff();
+
+        FlightException ex = assertThrows(FlightException.class, () -> aircraft.takeOff());
+
+        assertEquals(FlightStatus.ABORTED, aircraft.getStatus());
+        assertInstanceOf(IllegalStateException.class, ex.getCause());
+        verify(landingGear, times(0)).retract();
+    }
+
 }
