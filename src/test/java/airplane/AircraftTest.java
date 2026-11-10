@@ -156,5 +156,20 @@ class AircraftTest {
         verify(landingGear, times(1)).deploy();
         verify(engine, times(1)).stop();
     }
+    @Test
+    void prepareAgainAfterLanding_withResetMocks_usesNewStubbing() {
+        bringToInFlight();
+        aircraft.land();
+
+        reset(engine, fuelSystem, navigationSystem, landingGear);
+        verify(engine, times(0)).isOperational();    
+
+        when(engine.isOperational()).thenReturn(false);    
+
+        assertThrows(FlightException.class, () -> aircraft.prepareForTakeoff());
+        assertEquals(FlightStatus.LANDED, aircraft.getStatus());
+        verify(engine, times(1)).isOperational();
+    }
+
 
 }
