@@ -120,4 +120,41 @@ class AircraftTest {
         verify(fuelSystem, times(0)).consumeFuel(anyDouble());
     }
 
+    @Test
+    void cruise_whenFuelConsumptionFails_emergencyLandsAndThrowsFlightException() {
+        bringToInFlight();
+        doThrow(new IllegalStateException("Not enough fuel."))
+                .when(fuelSystem).consumeFuel(any(Double.class));
+
+        FlightException ex = assertThrows(FlightException.class, () -> aircraft.cruise(500.0));
+
+        assertEquals(FlightStatus.LANDED, aircraft.getStatus());
+        assertInstanceOf(IllegalStateException.class, ex.getCause());
+        verify(fuelSystem, times(1)).consumeFuel(500.0);
+        verify(landingGear, times(1)).deploy();
+        verify(engine, times(1)).stop();
+    }
+
+    @Test
+    void cruise_withNonPositiveFuel_throwsIllegalArgumentAndTouchesNothing() {
+        bringToInFlight();
+
+        assertThrows(IllegalArgumentException.class, () -> aircraft.cruise(0));
+        assertThrows(IllegalArgumentException.class, () -> aircraft.cruise(-5));
+
+        assertEquals(FlightStatus.IN_FLIGHT, aircraft.getStatus());
+        verify(fuelSystem, times(0)).consumeFuel(any(Double.class));
+    }
+
+    @Test
+    void land_deploysGearStopsEngineAndSetsLanded() {
+        bringToInFlight();
+
+        aircraft.land();
+
+        assertEquals(FlightStatus.LANDED, aircraft.getStatus());
+        verify(landingGear, times(1)).deploy();
+        verify(engine, times(1)).stop();
+    }
+
 }
